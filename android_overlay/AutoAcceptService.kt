@@ -35,8 +35,9 @@ class AutoAcceptService : AccessibilityService() {
 
     private val acceptWords = setOf("تطابق", "اقبل", "accept")
     private val rejectWords = setOf("لا شكرا")
-    private val kmNear = Regex("""بعد\s*([0-9]+(?:\.[0-9]+)?)\s*(?:كلم|كم|km)(?![\u0621-\u064A])""")
-    private val kmAny = Regex("""([0-9]+(?:\.[0-9]+)?)\s*(?:كلم|كم|km)(?![\u0621-\u064A])""")
+    private val kmNear = Regex("""بعد[\s|]*([0-9]+(?:\.[0-9]+)?)[\s|]*(?:كلم|كم|km)(?![\u0621-\u064A])""")
+    private val kmAny = Regex("""([0-9]+(?:\.[0-9]+)?)[\s|]*(?:كلم|كم|km)(?![\u0621-\u064A])""")
+    private var curDbg = ""
 
     private fun sp(): SharedPreferences = getSharedPreferences("prefs", Context.MODE_PRIVATE)
     private fun on(k: String, d: Boolean) = (sp().getString(k, if (d) "1" else "0") ?: "0") == "1"
@@ -135,6 +136,9 @@ class AutoAcceptService : AccessibilityService() {
         val sb = StringBuilder()
         for (ch in s) {
             when {
+                ch in '\u200B'..'\u200F' || ch in '\u202A'..'\u202E' ||
+                    ch in '\u2066'..'\u2069' || ch == '\uFEFF' || ch == '\u061C' -> {}
+                ch == '\u00A0' || ch == '\u202F' || ch == '\u2007' -> sb.append(' ')
                 ch in '\u064B'..'\u065F' || ch == '\u0640' -> {}
                 ch == 'أ' || ch == 'إ' || ch == 'آ' -> sb.append('ا')
                 ch == 'ة' -> sb.append('ه')
@@ -221,11 +225,21 @@ class AutoAcceptService : AccessibilityService() {
 
     private fun ts() = SimpleDateFormat("HH:mm:ss", Locale.US).format(Date())
 
-    private fun diag(s: String) {
+    private fun diag(msg: String) {
+        val s = msg + curDbg
         if (s != lastDiag) {
             lastDiag = s
             sp().edit().putString("diag", s).apply()
         }
+    }
+
+    private fun esc(t: String): String {
+        val sb = StringBuilder()
+        for (c in t) {
+            if (c.code < 128 || c in '\u0600'..'\u06FF') sb.append(c)
+            else sb.append("\\u").append(String.format("%04x", c.code))
+        }
+        return sb.toString()
     }
 
     private fun pickupAllowed(items: List<Item>): Boolean {
@@ -292,7 +306,12 @@ class AutoAcceptService : AccessibilityService() {
         val acceptBtn = items.firstOrNull { isAccept(it.text) }
 
         val maxKm = (sp().getString("maxKm", "3") ?: "3").toDoubleOrNull() ?: 3.0
-        val okDistance = maxKm < 0 || (dist != null && dist <= maxKm)
+        curDbg = if (dist == null)
+            " | نص المسافة الخام: " + items.filter { norm(it.text).contains("بعد") || norm(it.text).contains("كل") }
+                .take(4).joinToString(" / ") { esc(it.text) }
+        else ""
+        val okDistance = maxKm < 0 || (dist != null && dist <= maxKm) ||
+            (dist == null && on("unknownOk", true))
         val okNb = pickupAllowed(items)
         val ok = okDistance && okNb
 

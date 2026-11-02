@@ -436,6 +436,9 @@ class SettingsPage extends StatelessWidget {
             const SwitchRow('◎', 'ضغط بالإحداثيات إذا الزر مخفي',
                 'يلمس مكان زر القبول المعتاد لما يظهر الطلب وما يلقى الزر',
                 'tapFallback'),
+            const SwitchRow('؟', 'قبول إذا ما انقرت المسافة',
+                'إذا التطبيق ما قدر يقرا المسافة من الشاشة يقبل بدل ما يتجاهل',
+                'unknownOk'),
             Box(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
