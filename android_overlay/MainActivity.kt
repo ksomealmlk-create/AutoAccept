@@ -19,15 +19,17 @@ class MainActivity : FlutterActivity() {
                         result.success(null)
                     }
                     "isEnabled" -> {
-                        val enabled = Settings.Secure.getString(
+                        val e = Settings.Secure.getString(
                             contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
                         ) ?: ""
-                        result.success(enabled.contains("$packageName/.AutoAcceptService") ||
-                                enabled.contains("$packageName/$packageName.AutoAcceptService"))
+                        result.success(e.contains("$packageName/.AutoAcceptService") ||
+                                e.contains("$packageName/$packageName.AutoAcceptService"))
                     }
-                    "getWords" -> result.success(prefs.getString("words", "اقبل,تطابق"))
-                    "setWords" -> {
-                        prefs.edit().putString("words", call.arguments as String).apply()
+                    "getAll" -> result.success(prefs.all.mapValues { it.value.toString() })
+                    "set" -> {
+                        val k = call.argument<String>("key")!!
+                        val v = call.argument<String>("value")!!
+                        prefs.edit().putString(k, v).apply()
                         result.success(null)
                     }
                     else -> result.notImplemented()
