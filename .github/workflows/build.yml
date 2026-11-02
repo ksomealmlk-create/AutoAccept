@@ -7,6 +7,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -14,10 +15,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
       - name: Generate Flutter android project
         run: flutter create --org com.example --project-name autoaccept --platforms=android .
@@ -33,9 +36,10 @@ jobs:
           cp android_overlay/accessibility_config.xml android/app/src/main/res/xml/
           cp android_overlay/acc_strings.xml android/app/src/main/res/values/
           python3 scripts/patch_manifest.py
+          printf "org.gradle.parallel=true\norg.gradle.caching=true\norg.gradle.daemon=false\n" >> android/gradle.properties
 
       - run: flutter pub get
-      - run: flutter build apk --release
+      - run: flutter build apk --release --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
         with:
