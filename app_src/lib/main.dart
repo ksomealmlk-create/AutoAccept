@@ -433,6 +433,27 @@ class SettingsPage extends StatelessWidget {
             const SwitchRow('◉', 'زر عائم',
                 'زر يشغّل ويطفي الأتمتة فوق أي تطبيق (اسحبه لأي مكان)',
                 'floating'),
+            const SwitchRow('◎', 'ضغط بالإحداثيات إذا الزر مخفي',
+                'يلمس مكان زر القبول المعتاد لما يظهر الطلب وما يلقى الزر',
+                'tapFallback'),
+            Box(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        'ارتفاع نقطة الضغط: ${store.s('tapY', '87.3')}% من الشاشة',
+                        style: TextStyle(color: _text(c), fontSize: 13)),
+                    Slider(
+                      min: 75,
+                      max: 97,
+                      divisions: 44,
+                      value: (double.tryParse(store.s('tapY', '87.3')) ?? 87.3)
+                          .clamp(75.0, 97.0)
+                          .toDouble(),
+                      onChanged: (v) => store.set('tapY', v.toStringAsFixed(1)),
+                    ),
+                  ]),
+            ),
             const Section('المسافة'),
             Expand(
               '↔',
@@ -526,6 +547,9 @@ class SettingsPage extends StatelessWidget {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text('آخر فحص: ${store.s('hb', 'ما صار فحص (الخدمة مو شغالة)')}',
+                        style: TextStyle(color: _sub(c), fontSize: 12)),
+                    const SizedBox(height: 6),
                     Text(store.s('diag', 'ما صار أي فحص لطلب لحد الآن'),
                         style: TextStyle(color: _sub(c), fontSize: 12)),
                     TextButton(

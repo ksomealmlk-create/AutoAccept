@@ -29,6 +29,8 @@ class AutoAcceptService : AccessibilityService() {
     private var lastAction = 0L
     private var lastScan = 0L
     private var lastDiag = ""
+    private var lastHb = 0L
+    private var lastFallback = 0L
     private var fab: TextView? = null
 
     private val acceptWords = setOf("تطابق", "اقبل", "accept")
@@ -147,13 +149,27 @@ class AutoAcceptService : AccessibilityService() {
 
     private fun cmp(s: String) = norm(s).replace(Regex("[,،.:]"), "").replace(Regex("\\s+"), " ").trim()
 
-    private class Item(val node: AccessibilityNodeInfo, val text: String)
+    private class Item(val node: AccessibilityNodeInfo, val text: String, val pkg: String)
 
-    private fun collect(n: AccessibilityNodeInfo?, out: MutableList<Item>) {
+    private fun collect(n: AccessibilityNodeInfo?, out: MutableList<Item>, pkg: String) {
         if (n == null) return
         val t = n.text?.toString() ?: n.contentDescription?.toString()
-        if (!t.isNullOrBlank()) out.add(Item(n, t))
-        for (i in 0 until n.childCount) collect(n.getChild(i), out)
+        if (!t.isNullOrBlank()) out.add(Item(n, t, pkg))
+        for (i in 0 until n.childCount) collect(n.getChild(i), out, pkg)
+    }
+
+    /** نتجاهل نوافذ النظام والكيبورد وتطبيقنا */
+    private fun skipPkg(p: String) =
+        p == packageName || p == "com.android.systemui" || p.contains("inputmethod") || p.isEmpty()
+
+    private fun isAccept(t: String): Boolean {
+        val c = cmp(t)
+        return c.length <= 14 && acceptWords.any { c == it || c.contains(it) }
+    }
+
+    private fun isReject(t: String): Boolean {
+        val c = cmp(t)
+        return c.length <= 16 && c.contains("لا شكر")
     }
 
     // ---------------- الضغط ----------------
@@ -169,13 +185,25 @@ class AutoAcceptService : AccessibilityService() {
         return dispatchGesture(g, null, null)
     }
 
-    private fun press(n: AccessibilityNodeInfo): String {
+    private fun clickUp(n: AccessibilityNodeInfo): Boolean {
         var x: AccessibilityNodeInfo? = n
         while (x != null) {
-            if (x.isClickable && x.isEnabled && x.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return "click"
+            if (x.isClickable && x.isEnabled && x.performAction(AccessibilityNodeInfo.ACTION_CLICK)) return true
             x = x.parent
         }
-        return if (tap(n)) "tap" else "fail"
+        return false
+    }
+
+    /** tapFirst=true: لمسة حقيقية بالإحداثيات أولاً (تطبيق Uber يتجاهل ACTION_CLICK أحيانًا) */
+    private fun press(n: AccessibilityNodeInfo, tapFirst: Boolean): String {
+        if (tapFirst) {
+            if (tap(n)) return "لمس"
+            if (clickUp(n)) return "كليك"
+        } else {
+            if (clickUp(n)) return "كليك"
+            if (tap(n)) return "لمس"
+        }
+        return "fail"
     }
 
     private fun inc(k: String) {
@@ -234,50 +262,78 @@ class AutoAcceptService : AccessibilityService() {
             if (ws != null) {
                 for (w in ws) {
                     val r = w.root ?: continue
-                    if (r.packageName?.toString() == packageName) continue
-                    collect(r, items)
+                    val pk = r.packageName?.toString() ?: ""
+                    if (skipPkg(pk)) continue
+                    collect(r, items, pk)
                 }
             }
         } catch (_: Exception) {}
-        if (items.isEmpty()) {
-            val r = rootInActiveWindow
-            if (r != null && r.packageName?.toString() != packageName) collect(r, items)
+        try {
+            val ar = rootInActiveWindow
+            val apk = ar?.packageName?.toString() ?: ""
+            if (ar != null && !skipPkg(apk) && items.none { it.pkg == apk }) collect(ar, items, apk)
+        } catch (_: Exception) {}
+        if (now - lastHb > 2000) {
+            lastHb = now
+            sp().edit().putString("hb", "${ts()} | نصوص التطبيقات: ${items.size} | " + items.map { it.pkg }.distinct().joinToString(",")).apply()
         }
         if (items.isEmpty()) return
 
         // إغلاق رسالة «موافق»
         if (on("closeOk", true)) {
             val ok = items.firstOrNull { cmp(it.text) == "موافق" }
-            if (ok != null && press(ok.node) != "fail") { lastAction = now; return }
+            if (ok != null && press(ok.node, false) != "fail") { lastAction = now; return }
         }
 
         val joined = items.joinToString(" | ") { norm(it.text) }
         val dist = kmNear.find(joined)?.groupValues?.get(1)?.toDoubleOrNull()
             ?: kmAny.find(joined)?.groupValues?.get(1)?.toDoubleOrNull()
 
-        val acceptBtn = items.firstOrNull { cmp(it.text) in acceptWords }
-        if (acceptBtn == null) {
-            if (joined.contains("بعد") && dist != null) {
-                diag("${ts()} ظهر طلب لكن ما لقيت زر القبول. النصوص: " +
-                    items.take(14).joinToString(" / ") { it.text })
-            }
-            return
-        }
+        val acceptBtn = items.firstOrNull { isAccept(it.text) }
 
         val maxKm = (sp().getString("maxKm", "3") ?: "3").toDoubleOrNull() ?: 3.0
         val okDistance = maxKm < 0 || (dist != null && dist <= maxKm)
         val okNb = pickupAllowed(items)
         val ok = okDistance && okNb
 
+        if (acceptBtn == null) {
+            if (joined.contains("بعد") && dist != null) {
+                if (ok && on("accept", true) && on("tapFallback", true) && now - lastFallback > 1500) {
+                    // الزر مخفي عن سهولة الوصول: نلمس مكانه المعتاد بأسفل البطاقة
+                    lastFallback = now
+                    lastAction = now
+                    val dm = android.util.DisplayMetrics()
+                    @Suppress("DEPRECATION")
+                    (getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.getRealMetrics(dm)
+                    val yPct = (sp().getString("tapY", "87.3") ?: "87.3").toFloatOrNull() ?: 87.3f
+                    val x = dm.widthPixels * 0.5f
+                    val y = dm.heightPixels * (yPct / 100f)
+                    val path = Path()
+                    path.moveTo(x, y)
+                    val sent = dispatchGesture(
+                        GestureDescription.Builder()
+                            .addStroke(GestureDescription.StrokeDescription(path, 0, 40)).build(),
+                        null, null
+                    )
+                    beep3()
+                    diag("${ts()} الزر مخفي، ضغطت بالإحداثيات (${x.toInt()}, ${y.toInt()}) أُرسلت=$sent | المسافة: $dist كم")
+                } else {
+                    diag("${ts()} ظهر طلب لكن ما لقيت زر القبول. النصوص: " +
+                        items.take(25).joinToString(" / ") { "${it.pkg.substringAfterLast('.')}: ${it.text}" })
+                }
+            }
+            return
+        }
+
         if (ok && on("accept", true)) {
-            val how = press(acceptBtn.node)
+            val how = press(acceptBtn.node, true)
             lastAction = now
             if (how != "fail") { inc("stat_accept"); beep3() }
             diag("${ts()} المسافة: ${dist ?: "؟"} كم | الحد: ${if (maxKm < 0) "بدون" else maxKm} | قرار: قبول | الضغط: $how")
         } else if (!ok && on("reject", false)) {
-            val rej = items.firstOrNull { cmp(it.text) in rejectWords }
+            val rej = items.firstOrNull { isReject(it.text) }
             if (rej != null) {
-                val how = press(rej.node)
+                val how = press(rej.node, true)
                 lastAction = now
                 if (how != "fail") inc("stat_reject")
                 diag("${ts()} المسافة: ${dist ?: "؟"} كم | الحد: $maxKm | قرار: تجاهل | الضغط: $how")
