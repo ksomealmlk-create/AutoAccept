@@ -164,7 +164,8 @@ class AutoAcceptService : AccessibilityService() {
 
     /** نتجاهل نوافذ النظام والكيبورد وتطبيقنا */
     private fun skipPkg(p: String) =
-        p == packageName || p == "com.android.systemui" || p.contains("inputmethod") || p.isEmpty()
+        p == packageName || p == "com.android.systemui" || p.contains("inputmethod") || p.isEmpty() ||
+        p.contains("screenrecorder") || p == "com.miui.securitycenter" || p == "com.android.settings"
 
     private fun isAccept(t: String): Boolean {
         val c = cmp(t)
@@ -343,6 +344,9 @@ class AutoAcceptService : AccessibilityService() {
             }
             return
         }
+
+        // لا نقبل إلا إذا ظهر نص طلب حقيقي (بعد ... كم) حتى ما نضغط على أي زر ثاني
+        if (dist == null && !joined.contains("بعد")) return
 
         if (ok && on("accept", true)) {
             val how = press(acceptBtn.node, true)
