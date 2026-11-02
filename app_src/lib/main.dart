@@ -430,6 +430,9 @@ class SettingsPage extends StatelessWidget {
             const SwitchRow('♪', 'تنبيه صوتي عند القبول',
                 'ثلاث نغمات عند قبول الطلب', 'sound',
                 def: false),
+            const SwitchRow('◉', 'زر عائم',
+                'زر يشغّل ويطفي الأتمتة فوق أي تطبيق (اسحبه لأي مكان)',
+                'floating'),
             const Section('المسافة'),
             Expand(
               '↔',
@@ -518,6 +521,17 @@ class SettingsPage extends StatelessWidget {
                   ),
                 ),
             ]),
+            const Section('تشخيص آخر الطلبات'),
+            Box(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(store.s('diag', 'ما صار أي فحص لطلب لحد الآن'),
+                        style: TextStyle(color: _sub(c), fontSize: 12)),
+                    TextButton(
+                        onPressed: store.load, child: const Text('تحديث')),
+                  ]),
+            ),
             const SizedBox(height: 18),
             FilledButton(
               style: FilledButton.styleFrom(
