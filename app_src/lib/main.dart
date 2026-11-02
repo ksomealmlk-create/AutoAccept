@@ -396,7 +396,7 @@ class _Nav extends StatelessWidget {
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
-  static const dists = <double, String>{
+  static final dists = <double, String>{
     1.0: 'حتى 1 كم',
     2.0: 'حتى 2 كم',
     2.5: 'حتى 2.5 كم',
