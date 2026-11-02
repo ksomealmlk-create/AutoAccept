@@ -43,10 +43,11 @@ jobs:
           cp android_overlay/accessibility_config.xml android/app/src/main/res/xml/
           cp android_overlay/acc_strings.xml android/app/src/main/res/values/
           python3 scripts/patch_manifest.py
+          python3 android_overlay/patch_signing.py
           printf "org.gradle.parallel=true\norg.gradle.caching=true\norg.gradle.daemon=false\n" >> android/gradle.properties
 
       - run: flutter pub get
-      - run: flutter build apk --release --target-platform android-arm64
+      - run: flutter build apk --release --build-number=${{ github.run_number }} --target-platform android-arm64
 
       - uses: actions/upload-artifact@v4
         with:
