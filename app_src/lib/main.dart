@@ -105,7 +105,7 @@ class App extends StatelessWidget {
         final t = store.s('theme', 'system');
         return MaterialApp(
           debugShowCheckedModeBanner: false,
-          title: 'قبول سريع',
+          title: 'صگار كريم',
           theme: _theme(Brightness.light),
           darkTheme: _theme(Brightness.dark),
           themeMode: t == 'light'
@@ -276,7 +276,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         final on = store.serviceOn;
         final master = store.b('enabled', true);
         return Scaffold(
-          appBar: AppBar(title: const Text('قبول سريع')),
+          appBar: AppBar(title: const Text('صگار كريم')),
           body: ListView(padding: const EdgeInsets.all(16), children: [
             Box(
               pad: const EdgeInsets.all(20),

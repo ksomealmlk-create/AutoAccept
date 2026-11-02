@@ -44,6 +44,7 @@ jobs:
           cp android_overlay/acc_strings.xml android/app/src/main/res/values/
           python3 scripts/patch_manifest.py
           python3 android_overlay/patch_signing.py
+          python3 android_overlay/apply_branding.py
           printf "org.gradle.parallel=true\norg.gradle.caching=true\norg.gradle.daemon=false\n" >> android/gradle.properties
 
       - run: flutter pub get

@@ -50,7 +50,7 @@ class AutoAcceptService : AccessibilityService() {
     private val poll = object : Runnable {
         override fun run() {
             scan()
-            main.postDelayed(this, 500)
+            main.postDelayed(this, 120)
         }
     }
 
@@ -186,7 +186,7 @@ class AutoAcceptService : AccessibilityService() {
         val path = Path()
         path.moveTo(r.exactCenterX(), r.exactCenterY())
         val g = GestureDescription.Builder()
-            .addStroke(GestureDescription.StrokeDescription(path, 0, 40))
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 25))
             .build()
         return dispatchGesture(g, null, null)
     }
@@ -262,7 +262,7 @@ class AutoAcceptService : AccessibilityService() {
 
     // ---------------- الفحص ----------------
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (System.currentTimeMillis() - lastScan < 120) return
+        if (System.currentTimeMillis() - lastScan < 40) return
         scan()
     }
 
@@ -270,7 +270,7 @@ class AutoAcceptService : AccessibilityService() {
         if (!on("enabled", true)) return
         val now = System.currentTimeMillis()
         lastScan = now
-        if (now - lastAction < 500) return
+        if (now - lastAction < 250) return
 
         val items = ArrayList<Item>()
         try {
@@ -331,7 +331,7 @@ class AutoAcceptService : AccessibilityService() {
 
         if (acceptBtn == null) {
             if (joined.contains("بعد") && dist != null) {
-                if (ok && on("accept", true) && on("tapFallback", true) && now - lastFallback > 1500) {
+                if (ok && on("accept", true) && on("tapFallback", true) && now - lastFallback > 3000) {
                     // الزر مخفي عن سهولة الوصول: نلمس مكانه المعتاد بأسفل البطاقة
                     lastFallback = now
                     lastAction = now
@@ -345,11 +345,13 @@ class AutoAcceptService : AccessibilityService() {
                     path.moveTo(x, y)
                     val sent = dispatchGesture(
                         GestureDescription.Builder()
-                            .addStroke(GestureDescription.StrokeDescription(path, 0, 40)).build(),
+                            .addStroke(GestureDescription.StrokeDescription(path, 0, 25)).build(),
                         null, null
                     )
                     beep3()
                     diag("${ts()} الزر مخفي، ضغطت بالإحداثيات (${x.toInt()}, ${y.toInt()}) أُرسلت=$sent | المسافة: $dist كم | الوقت: ${mins ?: "؟"} د")
+                } else if (ok && now - lastFallback <= 3000) {
+                    // لسه ضغطنا قبل لحظات: لا نمسح رسالة التشخيص
                 } else {
                     diag("${ts()} ظهر طلب لكن ما لقيت زر القبول. النصوص: " +
                         items.take(25).joinToString(" / ") { "${it.pkg.substringAfterLast('.')}: ${it.text}" })
