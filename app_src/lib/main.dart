@@ -402,7 +402,28 @@ class SettingsPage extends StatelessWidget {
     2.5: 'حتى 2.5 كم',
     2.75: 'حتى 2.75 كم',
     3.0: 'حتى 3 كم',
+    4.0: 'حتى 4 كم',
+    5.0: 'حتى 5 كم',
+    6.0: 'حتى 6 كم',
+    7.0: 'حتى 7 كم',
+    8.0: 'حتى 8 كم',
+    9.0: 'حتى 9 كم',
+    10.0: 'حتى 10 كم',
     -1.0: 'بدون حد للمسافة',
+  };
+
+  static final mins = <double, String>{
+    1.0: 'حتى 1 دقيقة',
+    2.0: 'حتى 2 دقيقة',
+    3.0: 'حتى 3 دقائق',
+    4.0: 'حتى 4 دقائق',
+    5.0: 'حتى 5 دقائق',
+    6.0: 'حتى 6 دقائق',
+    7.0: 'حتى 7 دقائق',
+    8.0: 'حتى 8 دقائق',
+    9.0: 'حتى 9 دقائق',
+    10.0: 'حتى 10 دقائق',
+    -1.0: 'بدون حد للوقت',
   };
 
   @override
@@ -411,6 +432,7 @@ class SettingsPage extends StatelessWidget {
       listenable: store,
       builder: (c, _) {
         final km = double.tryParse(store.s('maxKm', '3')) ?? 3.0;
+        final mn = double.tryParse(store.s('maxMin', '10')) ?? 10.0;
         final sel = store.selectedNb;
         return Scaffold(
           appBar: AppBar(title: const Text('الإعدادات')),
@@ -474,6 +496,37 @@ class SettingsPage extends StatelessWidget {
                                 ? Icons.radio_button_checked
                                 : Icons.radio_button_off,
                             color: km == e.key ? _gold(c) : _sub(c),
+                            size: 20),
+                        const SizedBox(width: 10),
+                        Text(e.value,
+                            style: TextStyle(
+                                color: e.key < 0 ? _gold(c) : _text(c),
+                                fontWeight: e.key < 0
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                fontSize: 13)),
+                      ]),
+                    ),
+                  ),
+              ]),
+            ),
+            const Section('وقت الوصول'),
+            Expand(
+              '⏱',
+              'أقصى وقت للوصول للزبون',
+              mins[mn] ?? 'حتى 10 دقائق',
+              Column(children: [
+                for (final e in mins.entries)
+                  InkWell(
+                    onTap: () => store.set('maxMin', e.key.toString()),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      child: Row(children: [
+                        Icon(
+                            mn == e.key
+                                ? Icons.radio_button_checked
+                                : Icons.radio_button_off,
+                            color: mn == e.key ? _gold(c) : _sub(c),
                             size: 20),
                         const SizedBox(width: 10),
                         Text(e.value,

@@ -37,6 +37,7 @@ class AutoAcceptService : AccessibilityService() {
     private val rejectWords = setOf("لا شكرا")
     private val kmNear = Regex("""بعد[\s|]*([0-9]+(?:\.[0-9]+)?)[\s|]*(?:كلم|كم|km)(?![\u0621-\u064A])""")
     private val kmAny = Regex("""([0-9]+(?:\.[0-9]+)?)[\s|]*(?:كلم|كم|km)(?![\u0621-\u064A])""")
+    private val minRe = Regex("""بعد[\s|]*([0-9]+(?:\.[0-9]+)?)[\s|]*(?:دقيقه|دقايق|دقائق|دقيقة|د)(?![\u0621-\u064A])""")
     private var curDbg = ""
 
     private fun sp(): SharedPreferences = getSharedPreferences("prefs", Context.MODE_PRIVATE)
@@ -306,6 +307,18 @@ class AutoAcceptService : AccessibilityService() {
 
         val acceptBtn = items.firstOrNull { isAccept(it.text) }
 
+        // وقت الوصول بالدقائق: "على بعد 2 د" / "أقل من دقيقة واحدة"
+        val mins: Double? = minRe.find(joined)?.groupValues?.get(1)?.toDoubleOrNull()
+            ?: when {
+                joined.contains("اقل من دقيقه") -> 1.0
+                joined.contains("بعد دقيقتين") -> 2.0
+                joined.contains("بعد دقيقه") -> 1.0
+                else -> null
+            }
+        val maxMin = (sp().getString("maxMin", "10") ?: "10").toDoubleOrNull() ?: 10.0
+        val okTime = maxMin < 0 || (mins != null && mins <= maxMin) ||
+            (mins == null && on("unknownOk", true))
+
         val maxKm = (sp().getString("maxKm", "3") ?: "3").toDoubleOrNull() ?: 3.0
         curDbg = if (dist == null)
             " | نص المسافة الخام: " + items.filter { norm(it.text).contains("بعد") || norm(it.text).contains("كل") }
@@ -314,7 +327,7 @@ class AutoAcceptService : AccessibilityService() {
         val okDistance = maxKm < 0 || (dist != null && dist <= maxKm) ||
             (dist == null && on("unknownOk", true))
         val okNb = pickupAllowed(items)
-        val ok = okDistance && okNb
+        val ok = okDistance && okNb && okTime
 
         if (acceptBtn == null) {
             if (joined.contains("بعد") && dist != null) {
@@ -336,7 +349,7 @@ class AutoAcceptService : AccessibilityService() {
                         null, null
                     )
                     beep3()
-                    diag("${ts()} الزر مخفي، ضغطت بالإحداثيات (${x.toInt()}, ${y.toInt()}) أُرسلت=$sent | المسافة: $dist كم")
+                    diag("${ts()} الزر مخفي، ضغطت بالإحداثيات (${x.toInt()}, ${y.toInt()}) أُرسلت=$sent | المسافة: $dist كم | الوقت: ${mins ?: "؟"} د")
                 } else {
                     diag("${ts()} ظهر طلب لكن ما لقيت زر القبول. النصوص: " +
                         items.take(25).joinToString(" / ") { "${it.pkg.substringAfterLast('.')}: ${it.text}" })
@@ -352,7 +365,7 @@ class AutoAcceptService : AccessibilityService() {
             val how = press(acceptBtn.node, true)
             lastAction = now
             if (how != "fail") { inc("stat_accept"); beep3() }
-            diag("${ts()} المسافة: ${dist ?: "؟"} كم | الحد: ${if (maxKm < 0) "بدون" else maxKm} | قرار: قبول | الضغط: $how")
+            diag("${ts()} المسافة: ${dist ?: "؟"} كم | الوقت: ${mins ?: "؟"} د (حد ${if (maxMin < 0) "بدون" else maxMin}) | الحد: ${if (maxKm < 0) "بدون" else maxKm} | قرار: قبول | الضغط: $how")
         } else if (!ok && on("reject", false)) {
             val rej = items.firstOrNull { isReject(it.text) }
             if (rej != null) {
@@ -364,7 +377,7 @@ class AutoAcceptService : AccessibilityService() {
                 diag("${ts()} المسافة: ${dist ?: "؟"} كم خارج الحد، لكن ما لقيت زر «لا شكرًا» على الشاشة")
             }
         } else {
-            diag("${ts()} المسافة: ${dist ?: "؟"} كم | الحد: ${if (maxKm < 0) "بدون" else maxKm} | ما صار شي (خارج الحد أو القبول مطفي)")
+            diag("${ts()} المسافة: ${dist ?: "؟"} كم | الوقت: ${mins ?: "؟"} د (حد ${if (maxMin < 0) "بدون" else maxMin}) | الحد: ${if (maxKm < 0) "بدون" else maxKm} | ما صار شي (خارج الحد أو القبول مطفي)")
         }
     }
 
