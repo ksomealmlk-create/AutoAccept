@@ -827,7 +827,7 @@ public class MyAccessibilityService extends AccessibilityService {
                         clickLatMs, clickScanMs, clickPh));
             }
             lastHandledSignature = signature;
-            lastHandledAt = now;
+            lastHandledAt = now - DUP_WINDOW_MS + 2000L;
         }
     }
 
@@ -1012,19 +1012,19 @@ public class MyAccessibilityService extends AccessibilityService {
     /* ضغط على عقدة: لمس حقيقي بالإحداثيات أولاً، وإذا ما نفع ACTION_CLICK */
     private boolean tapNode(AccessibilityNodeInfo node) {
 
-        Rect r = new Rect();
-        node.getBoundsInScreen(r);
-
-        if (tapAt(r.centerX(), r.centerY())) {
-            lastTapMethod = "لمس";
-            return true;
-        }
-
+        /* 1) كليك مباشر على الزر القابل للضغط (الأضمن) */
         AccessibilityNodeInfo clickable = findClickableParent(node);
-
         if (clickable != null
                 && clickable.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
             lastTapMethod = "كليك";
+            return true;
+        }
+
+        /* 2) إذا ما نفع: لمس بالإحداثيات */
+        Rect r = new Rect();
+        node.getBoundsInScreen(r);
+        if (tapAt(r.centerX(), r.centerY())) {
+            lastTapMethod = "لمس";
             return true;
         }
 
@@ -1043,12 +1043,17 @@ public class MyAccessibilityService extends AccessibilityService {
             path.moveTo(x, y);
 
             GestureDescription.StrokeDescription stroke =
-                    new GestureDescription.StrokeDescription(path, 0, 50);
+                    new GestureDescription.StrokeDescription(path, 0, 90);
 
             GestureDescription gesture = new GestureDescription.Builder()
                     .addStroke(stroke).build();
 
-            return dispatchGesture(gesture, null, null);
+            return dispatchGesture(gesture, new GestureResultCallback() {
+                @Override
+                public void onCancelled(GestureDescription g) {
+                    Log.d(TAG, "اللمسة انلغت");
+                }
+            }, null);
 
         } catch (Exception e) {
             Log.d(TAG, "tapAt فشل: " + e.getMessage());
