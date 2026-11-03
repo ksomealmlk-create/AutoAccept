@@ -18,9 +18,10 @@ jobs:
 
       - name: Install Android SDK parts
         run: |
+          export JAVA_HOME=$JAVA_HOME_17_X64
           SDKM=$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager
-          yes | $SDKM --licenses > /dev/null || true
-          $SDKM "platforms;android-30" "build-tools;30.0.3" > /dev/null
+          yes | $SDKM --licenses > /dev/null 2>&1 || true
+          $SDKM "platforms;android-30" "build-tools;30.0.3"
 
       - uses: actions/cache@v4
         with:
