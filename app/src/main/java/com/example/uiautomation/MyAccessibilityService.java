@@ -298,6 +298,17 @@ public class MyAccessibilityService extends AccessibilityService {
         AccessibilityNodeInfo usMatchButton = null;
         boolean usOn = Prefs.isUsEnabled(this);
 
+        /* نبض تشخيص: يثبت إن الخدمة شغالة وشايفة بطاقة أمريكا (مرة كل 4 ثواني) */
+        if (usOn && now - lastUsHbAt > 4000L) {
+            String hbPlain = stripDiacritics(normalizedScreen);
+            if (hbPlain.contains("على بعد")) {
+                lastUsHbAt = now;
+                diag("شفت بطاقة (على بعد) | تطابق=" + hbPlain.contains("تطابق")
+                        + " | اقبل=" + hbPlain.contains("اقبل")
+                        + " | حزمة=" + rootNode.getPackageName());
+            }
+        }
+
         /* نبحث عن أزرار أمريكا فقط إذا نص الشاشة فيه كلماتها (يوفر 4 عمليات بحث) */
         boolean usWords = normalizedScreen.contains("تطابق")
                 || normalizedScreen.contains("اقبل")
@@ -565,6 +576,7 @@ public class MyAccessibilityService extends AccessibilityService {
     }
 
     private long lastUsTapAt = 0L;
+    private long lastUsHbAt = 0L;
     private static final long US_TAP_COOLDOWN_MS = 1500L;
 
     private String lastDiagMsg = "";
