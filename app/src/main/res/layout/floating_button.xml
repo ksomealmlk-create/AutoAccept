@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <!-- الحلقة البيضاء الرقيقة حول اللوقو (تشبه شكل اللوقو) -->
+    <View
+        android:layout_width="70dp"
+        android:layout_height="70dp"
+        android:layout_gravity="center"
+        android:background="@drawable/ring_bg"
+        android:elevation="9dp" />
+
+    <!-- اللوقو الدائري (القص يتم في Java) -->
+    <ImageView
+        android:id="@+id/floating_btn"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:scaleType="centerCrop"
+        android:src="@mipmap/ic_launcher"
+        android:elevation="10dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="زر التشغيل" />
+
+</FrameLayout>

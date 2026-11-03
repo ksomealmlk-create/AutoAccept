@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ألوان قديمة (تركتها كما هي) -->
+    <color name="bg_main">#0B1017</color>
+    <color name="card_bg">#FFFFFF</color>
+    <color name="card_border">#212F3D</color>
+
+    <color name="cyan_primary">#00E5FF</color>
+    <color name="cyan_dark">#007791</color>
+    <color name="green_accent">#00E676</color>
+
+    <color name="text_title">#FFFFFF</color>
+    <color name="text_subtitle">#8C9EFF</color>
+    <color name="text_body">#A0AAB5</color>
+
+    <!-- ألوان الثيم النهاري (كانت ناقصة وتسبب توقف التطبيق) -->
+    <color name="colorPrimary">#6C63FF</color>
+    <color name="colorPrimaryDark">#5A52E5</color>
+    <color name="colorAccent">#6C63FF</color>
+
+    <color name="screen_bg">#F3F5FA</color>
+    <color name="card_bg_alt">#EEF1F7</color>
+    <color name="border_color">#DCE2EC</color>
+    <color name="text_primary">#151B26</color>
+    <color name="text_secondary">#4B5567</color>
+    <color name="text_muted">#7A8496</color>
+    <color name="accent_teal">#0FA896</color>
+    <color name="accent_teal_dark">#0B8375</color>
+    <color name="accent_blue">#2F7BE0</color>
+    <color name="accent_purple">#6C63FF</color>
+    <color name="success">#16A34A</color>
+    <color name="danger">#E11D48</color>
+    <color name="warning">#D98E04</color>
+    <color name="surface_soft">#EEF1F7</color>
+    <color name="on_accent">#FFFFFF</color>
+</resources>
