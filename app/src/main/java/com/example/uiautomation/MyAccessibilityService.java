@@ -275,6 +275,15 @@ public class MyAccessibilityService extends AccessibilityService {
                 acceptCacheNodes = n;
                 return true;
             }
+            if (Prefs.isUsEnabled(this)) {
+                for (String t : US_ACCEPT_TEXTS) {
+                    List<AccessibilityNodeInfo> m =
+                            root.findAccessibilityNodeInfosByText(t);
+                    if (m != null && !m.isEmpty()) {
+                        return true;
+                    }
+                }
+            }
             return false;
         } catch (Exception e) {
             return false;
@@ -577,7 +586,7 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private long lastUsTapAt = 0L;
     private long lastUsHbAt = 0L;
-    private static final long US_TAP_COOLDOWN_MS = 1500L;
+    private static final long US_TAP_COOLDOWN_MS = 300L;
 
     private String lastDiagMsg = "";
 
@@ -615,7 +624,7 @@ public class MyAccessibilityService extends AccessibilityService {
                 return false;
             }
 
-            if (now - lastUsTapAt < 3000L) {
+            if (now - lastUsTapAt < 300L) {
                 return false;
             }
 
@@ -647,6 +656,9 @@ public class MyAccessibilityService extends AccessibilityService {
             boolean sent = tapAt(x, y);
             lastTapMethod = sent ? "لمس بالإحداثيات" : "فشل";
             markClick();
+            if (sent) {
+                burstTapAt(x, y);
+            }
 
             diag("الزر مخفي، لمست بالإحداثيات (" + x + "," + y + ") أُرسلت=" + sent
                     + " | كم=" + km + " وقت=" + minutes
@@ -726,6 +738,33 @@ public class MyAccessibilityService extends AccessibilityService {
             reason = (minutes == null) ? "NO_MIN" : "OUT_MIN";
         } else {
             reason = "OK";
+        }
+
+        /* مسار فوري: الطلب مناسب -> نضغط أول شي، وبعدين التشخيص والإحصائيات */
+        if (reason.equals("OK") && Prefs.isUsAutoAcceptEnabled(this)) {
+            ShotHelper.Req shotFast = ShotHelper.begin(this, wantUsShot());
+            boolean okFast = tapNode(matchButton);
+            markClick();
+
+            if (okFast) {
+                burstTap(matchButton);
+                lastUsTapAt = now;
+                lastHandledSignature = signature;
+                lastHandledAt = now - DUP_WINDOW_MS + 2000L;
+
+                String[] plF = extractUsPlaces(rootNode, matchButton);
+                diag("ضغطت زر القبول طريقة=" + lastTapMethod
+                        + " | كم=" + km + " وقت=" + minutes);
+                onAcceptedClick();
+                if (Prefs.isUsStatsEnabled(this)) {
+                    ShotHelper.attach(this, shotFast, TripStats.recordUs(
+                            this, "accepted",
+                            km != null ? km : -1, minutes != null ? minutes : -1,
+                            plF[0], plF[1], "OK", maxKm, maxMinutes,
+                            clickLatMs, clickScanMs, clickPh));
+                }
+                return;
+            }
         }
 
         diag("قراءة: كم=" + km + " وقت=" + minutes
@@ -812,6 +851,9 @@ public class MyAccessibilityService extends AccessibilityService {
 
         boolean result = tapNode(tapTarget);
         markClick();
+        if (result) {
+            burstTap(tapTarget);
+        }
 
         Log.d(TAG, "Uber أمريكا -> تطابق: " + result
                 + " | كم=" + km + " | دقايق=" + minutes);
@@ -1032,6 +1074,48 @@ public class MyAccessibilityService extends AccessibilityService {
         return false;
     }
 
+    /* ضغطتين إضافيتين (المجموع 3) كل 300 ملي ثانية، تتوقف إذا اختفى الزر */
+    private static final int US_BURST_EXTRA = 2;
+    private static final long US_BURST_GAP_MS = 300L;
+
+    private void burstTap(final AccessibilityNodeInfo node) {
+        final AccessibilityNodeInfo clickable = findClickableParent(node);
+        final AccessibilityNodeInfo target = clickable != null ? clickable : node;
+        final Rect r = new Rect();
+        node.getBoundsInScreen(r);
+
+        for (int i = 1; i <= US_BURST_EXTRA; i++) {
+            scanHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (!target.refresh()) {
+                            return;
+                        }
+                        if (clickable != null && clickable.performAction(
+                                AccessibilityNodeInfo.ACTION_CLICK)) {
+                            return;
+                        }
+                        tapAt(r.centerX(), r.centerY());
+                    } catch (Exception e) {
+                        Log.d(TAG, "burst خطأ: " + e.getMessage());
+                    }
+                }
+            }, US_BURST_GAP_MS * i);
+        }
+    }
+
+    private void burstTapAt(final int x, final int y) {
+        for (int i = 1; i <= US_BURST_EXTRA; i++) {
+            scanHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    tapAt(x, y);
+                }
+            }, US_BURST_GAP_MS * i);
+        }
+    }
+
     private boolean tapAt(int x, int y) {
 
         if (Build.VERSION.SDK_INT < 24 || x <= 0 || y <= 0) {
@@ -1043,7 +1127,7 @@ public class MyAccessibilityService extends AccessibilityService {
             path.moveTo(x, y);
 
             GestureDescription.StrokeDescription stroke =
-                    new GestureDescription.StrokeDescription(path, 0, 90);
+                    new GestureDescription.StrokeDescription(path, 0, 40);
 
             GestureDescription gesture = new GestureDescription.Builder()
                     .addStroke(stroke).build();
