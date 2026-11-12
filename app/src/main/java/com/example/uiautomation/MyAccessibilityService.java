@@ -137,6 +137,11 @@ public class MyAccessibilityService extends AccessibilityService {
         long et = event.getEventTime();
         lastEventUptime = et > 0 ? et : SystemClock.uptimeMillis();
 
+        /* وضع التجربة: يضغط مربع «قبول» الأخضر فور ظهوره بدون أي فحص */
+        if (INSTANT_TEST_MODE && instantTry()) {
+            return;
+        }
+
         if (scanPending) {
             return;
         }
@@ -428,6 +433,117 @@ public class MyAccessibilityService extends AccessibilityService {
 
         } catch (Exception e) {
             Log.d(TAG, "fastAccept فشل: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /* ===== وضع التجربة: ضغط فوري على مربع «قبول» فقط =====
+       true  = يضغط أول ما يظهر المربع، بدون مسافة ولا أحياء ولا أي فحص
+       false = يرجع للسلوك العادي (فحص المسافة والأحياء) */
+    private static final boolean INSTANT_TEST_MODE = true;
+
+    private static final long INSTANT_MIN_GAP_MS = 4L;
+    private static final long INSTANT_DUP_MS = 6000L;
+    private long lastInstantTryAt = 0L;
+    private long lastInstantClickAt = -100000L;
+
+    private boolean instantTry() {
+        try {
+            if (!Prefs.isAutoAcceptEnabled(this)) {
+                return false;
+            }
+
+            long up = SystemClock.uptimeMillis();
+
+            if (up - lastInstantClickAt < INSTANT_DUP_MS
+                    || up - lastInstantTryAt < INSTANT_MIN_GAP_MS) {
+                return false;
+            }
+            lastInstantTryAt = up;
+
+            AccessibilityNodeInfo root = getRootInActiveWindow();
+            if (root == null || isOwnWindow(root)) {
+                return false;
+            }
+
+            List<AccessibilityNodeInfo> nodes =
+                    root.findAccessibilityNodeInfosByText(ACCEPT_TEXT);
+            if (nodes == null || nodes.isEmpty()) {
+                return false;
+            }
+
+            AccessibilityNodeInfo btn = null;
+            for (AccessibilityNodeInfo nd : nodes) {
+                if (nd == null) {
+                    continue;
+                }
+                /* لازم نص المربع «قبول» بالضبط (يتجنب كلمات ثانية فيها قبول) */
+                CharSequence tx = nd.getText() != null
+                        ? nd.getText() : nd.getContentDescription();
+                if (tx == null || !ACCEPT_TEXT.equals(tx.toString().trim())) {
+                    continue;
+                }
+                AccessibilityNodeInfo c = findClickableParent(nd);
+                if (c != null) {
+                    btn = c;
+                    break;
+                }
+            }
+            if (btn == null) {
+                return false;
+            }
+
+            scanStartUptime = up;
+            phRootsMs = 0L;
+            phTextMs = 0L;
+            phBtnMs = 0L;
+            phWins = 0;
+
+            boolean ok = btn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            markClick();
+            Log.d(TAG, "ضغط فوري على قبول: " + ok);
+
+            if (!ok) {
+                return false;
+            }
+
+            lastInstantClickAt = up;
+            onAcceptedClick();
+            ShotHelper.Req shot = ShotHelper.begin(this, wantShot());
+
+            /* كل شي بعد الضغط */
+            if (Prefs.isStatsEnabled(this)) {
+                double dist = -1;
+                String category = "NORMAL";
+                String address = null;
+                try {
+                    pickupFound = null;
+                    StringBuilder sb = new StringBuilder(512);
+                    collectAllText(root, sb);
+                    String txt = sb.toString();
+                    Double d = extractDistanceKm(txt);
+                    if (d != null) {
+                        dist = d;
+                    }
+                    category = detectCategory(normalizeArabicText(txt));
+                    address = pickupFound;
+                } catch (Exception ignored) {
+                }
+                String matched = address != null
+                        ? NeighborhoodFilter.matchNeighborhood(address) : null;
+                String hood = matched != null
+                        ? matched : firstAddressPart(address);
+                Prefs.incrementAccepted(this);
+                Prefs.addLogEntry(this, dist, true);
+                ShotHelper.attach(this, shot, TripStats.recordAccepted(
+                        this, dist, category, hood,
+                        (double) Prefs.getMaxDistanceKm(this),
+                        clickLatMs, clickScanMs, clickPh));
+            }
+            return true;
+
+        } catch (Exception e) {
+            Log.d(TAG, "instantTry فشل: " + e.getMessage());
             return false;
         }
     }
