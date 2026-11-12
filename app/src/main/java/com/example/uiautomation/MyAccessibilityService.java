@@ -219,6 +219,10 @@ public class MyAccessibilityService extends AccessibilityService {
 
             if (active != null && !isOwnWindow(active)
                     && hasAcceptNode(active)) {
+                /* مسار القبول الأسرع: يضغط قبل أي مرور على كامل الشجرة */
+                if (fastAccept(active, now)) {
+                    return;
+                }
                 done.add(active);
                 if (scanRoot(active, now)) {
                     return;
@@ -256,6 +260,159 @@ public class MyAccessibilityService extends AccessibilityService {
         }
     }
 
+    /* ===== مسار القبول الأسرع (Uber العراق): يضغط قبل المرور على كامل الشجرة ===== */
+    private boolean hasAnyText(AccessibilityNodeInfo root, String t) {
+        List<AccessibilityNodeInfo> n = root.findAccessibilityNodeInfosByText(t);
+        return n != null && !n.isEmpty();
+    }
+
+    private String findPickupAddress(AccessibilityNodeInfo root) {
+        String[] keys = {"النجف", "قضاء", "محافظة"};
+        for (String key : keys) {
+            List<AccessibilityNodeInfo> ns = root.findAccessibilityNodeInfosByText(key);
+            if (ns == null) {
+                continue;
+            }
+            for (AccessibilityNodeInfo n : ns) {
+                if (n == null || n.getText() == null) {
+                    continue;
+                }
+                if (looksLikePickupAddress(n.getText())) {
+                    return n.getText().toString();
+                }
+            }
+        }
+        return null;
+    }
+
+    private Double findDistanceFast(AccessibilityNodeInfo root) {
+        String[] keys = {"كيلو", "km"};
+        for (String key : keys) {
+            List<AccessibilityNodeInfo> ns = root.findAccessibilityNodeInfosByText(key);
+            if (ns == null) {
+                continue;
+            }
+            for (AccessibilityNodeInfo n : ns) {
+                if (n == null) {
+                    continue;
+                }
+                CharSequence tx = n.getText() != null
+                        ? n.getText() : n.getContentDescription();
+                if (tx == null) {
+                    continue;
+                }
+                Double d = extractDistanceKm(tx.toString());
+                if (d != null) {
+                    return d;
+                }
+            }
+        }
+        return null;
+    }
+
+    /** true = تم التعامل مع الرحلة؛ false = كمل بالمسار الكامل القديم */
+    private boolean fastAccept(AccessibilityNodeInfo root, long now) {
+        try {
+            if (!Prefs.isAutoAcceptEnabled(this)
+                    || acceptCacheNodes == null
+                    || !root.equals(acceptCacheRoot)) {
+                return false;
+            }
+
+            /* أي شاشة غير بطاقة العراق العادية تروح للمسار الكامل */
+            if (hasAnyText(root, CONFIRM_TEXT) || hasAnyText(root, "مع دفع")) {
+                return false;
+            }
+            if (Prefs.isUsEnabled(this)) {
+                for (String t : US_ACCEPT_TEXTS) {
+                    if (hasAnyText(root, t)) {
+                        return false;
+                    }
+                }
+            }
+
+            Double distance = findDistanceFast(root);
+            String address = findPickupAddress(root);
+            if (distance == null || address == null) {
+                return false;
+            }
+
+            double maxKm = Prefs.getMaxDistanceKm(this);
+            boolean rangeOk = maxKm < 0
+                    || (distance >= MIN_DISTANCE_KM && distance <= maxKm);
+
+            String matchedHood = NeighborhoodFilter.matchNeighborhood(address);
+            boolean hoodOk = true;
+            if (Prefs.isNeighborhoodFilterEnabled(this) && matchedHood != null) {
+                hoodOk = Prefs.getSelectedNeighborhoods(this).contains(matchedHood);
+            }
+
+            /* الرفض يبقى بالمسار الكامل */
+            if (!rangeOk || !hoodOk) {
+                return false;
+            }
+
+            String sig = "F|" + distance + "|" + address;
+            if (sig.equals(lastHandledSignature)
+                    && now - lastHandledAt < DUP_WINDOW_MS) {
+                return true;
+            }
+
+            AccessibilityNodeInfo btn = null;
+            for (AccessibilityNodeInfo nd : acceptCacheNodes) {
+                if (nd == null) {
+                    continue;
+                }
+                AccessibilityNodeInfo c = findClickableParent(nd);
+                if (c != null) {
+                    btn = c;
+                    break;
+                }
+            }
+            if (btn == null) {
+                return false;
+            }
+
+            boolean result = btn.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+            markClick();
+            ShotHelper.Req shot = ShotHelper.begin(this, wantShot());
+
+            Log.d(TAG, "رحلة ضمن المسافة (سريع) -> قبول: " + result);
+
+            if (!result) {
+                return false;
+            }
+
+            lastHandledSignature = sig;
+            lastHandledAt = now;
+            onAcceptedClick();
+
+            /* كل شي بعد الضغط: ما يأخر القبول */
+            if (Prefs.isStatsEnabled(this)) {
+                String category = "NORMAL";
+                try {
+                    pickupFound = null;
+                    StringBuilder sb = new StringBuilder(512);
+                    collectAllText(root, sb);
+                    category = detectCategory(normalizeArabicText(sb.toString()));
+                } catch (Exception ignored) {
+                }
+                String hood = matchedHood != null
+                        ? matchedHood : firstAddressPart(address);
+                Prefs.incrementAccepted(this);
+                Prefs.addLogEntry(this, distance, true);
+                ShotHelper.attach(this, shot, TripStats.recordAccepted(
+                        this, distance, category, hood, maxKm,
+                        clickLatMs, clickScanMs, clickPh));
+            }
+            return true;
+
+        } catch (Exception e) {
+            Log.d(TAG, "fastAccept فشل: " + e.getMessage());
+            return false;
+        }
+    }
+
     private boolean isOwnWindow(AccessibilityNodeInfo r) {
         CharSequence pk = r.getPackageName();
         return pk != null && getPackageName().contentEquals(pk);
@@ -274,15 +431,6 @@ public class MyAccessibilityService extends AccessibilityService {
                 acceptCacheRoot = root;
                 acceptCacheNodes = n;
                 return true;
-            }
-            if (Prefs.isUsEnabled(this)) {
-                for (String t : US_ACCEPT_TEXTS) {
-                    List<AccessibilityNodeInfo> m =
-                            root.findAccessibilityNodeInfosByText(t);
-                    if (m != null && !m.isEmpty()) {
-                        return true;
-                    }
-                }
             }
             return false;
         } catch (Exception e) {
@@ -586,7 +734,7 @@ public class MyAccessibilityService extends AccessibilityService {
 
     private long lastUsTapAt = 0L;
     private long lastUsHbAt = 0L;
-    private static final long US_TAP_COOLDOWN_MS = 300L;
+    private static final long US_TAP_COOLDOWN_MS = 1500L;
 
     private String lastDiagMsg = "";
 
@@ -624,7 +772,7 @@ public class MyAccessibilityService extends AccessibilityService {
                 return false;
             }
 
-            if (now - lastUsTapAt < 300L) {
+            if (now - lastUsTapAt < 3000L) {
                 return false;
             }
 
@@ -656,9 +804,6 @@ public class MyAccessibilityService extends AccessibilityService {
             boolean sent = tapAt(x, y);
             lastTapMethod = sent ? "لمس بالإحداثيات" : "فشل";
             markClick();
-            if (sent) {
-                burstTapAt(x, y);
-            }
 
             diag("الزر مخفي، لمست بالإحداثيات (" + x + "," + y + ") أُرسلت=" + sent
                     + " | كم=" + km + " وقت=" + minutes
@@ -738,33 +883,6 @@ public class MyAccessibilityService extends AccessibilityService {
             reason = (minutes == null) ? "NO_MIN" : "OUT_MIN";
         } else {
             reason = "OK";
-        }
-
-        /* مسار فوري: الطلب مناسب -> نضغط أول شي، وبعدين التشخيص والإحصائيات */
-        if (reason.equals("OK") && Prefs.isUsAutoAcceptEnabled(this)) {
-            ShotHelper.Req shotFast = ShotHelper.begin(this, wantUsShot());
-            boolean okFast = tapNode(matchButton);
-            markClick();
-
-            if (okFast) {
-                burstTap(matchButton);
-                lastUsTapAt = now;
-                lastHandledSignature = signature;
-                lastHandledAt = now - DUP_WINDOW_MS + 2000L;
-
-                String[] plF = extractUsPlaces(rootNode, matchButton);
-                diag("ضغطت زر القبول طريقة=" + lastTapMethod
-                        + " | كم=" + km + " وقت=" + minutes);
-                onAcceptedClick();
-                if (Prefs.isUsStatsEnabled(this)) {
-                    ShotHelper.attach(this, shotFast, TripStats.recordUs(
-                            this, "accepted",
-                            km != null ? km : -1, minutes != null ? minutes : -1,
-                            plF[0], plF[1], "OK", maxKm, maxMinutes,
-                            clickLatMs, clickScanMs, clickPh));
-                }
-                return;
-            }
         }
 
         diag("قراءة: كم=" + km + " وقت=" + minutes
@@ -851,9 +969,6 @@ public class MyAccessibilityService extends AccessibilityService {
 
         boolean result = tapNode(tapTarget);
         markClick();
-        if (result) {
-            burstTap(tapTarget);
-        }
 
         Log.d(TAG, "Uber أمريكا -> تطابق: " + result
                 + " | كم=" + km + " | دقايق=" + minutes);
@@ -869,7 +984,7 @@ public class MyAccessibilityService extends AccessibilityService {
                         clickLatMs, clickScanMs, clickPh));
             }
             lastHandledSignature = signature;
-            lastHandledAt = now - DUP_WINDOW_MS + 2000L;
+            lastHandledAt = now;
         }
     }
 
@@ -1054,66 +1169,24 @@ public class MyAccessibilityService extends AccessibilityService {
     /* ضغط على عقدة: لمس حقيقي بالإحداثيات أولاً، وإذا ما نفع ACTION_CLICK */
     private boolean tapNode(AccessibilityNodeInfo node) {
 
-        /* 1) كليك مباشر على الزر القابل للضغط (الأضمن) */
+        Rect r = new Rect();
+        node.getBoundsInScreen(r);
+
+        if (tapAt(r.centerX(), r.centerY())) {
+            lastTapMethod = "لمس";
+            return true;
+        }
+
         AccessibilityNodeInfo clickable = findClickableParent(node);
+
         if (clickable != null
                 && clickable.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
             lastTapMethod = "كليك";
             return true;
         }
 
-        /* 2) إذا ما نفع: لمس بالإحداثيات */
-        Rect r = new Rect();
-        node.getBoundsInScreen(r);
-        if (tapAt(r.centerX(), r.centerY())) {
-            lastTapMethod = "لمس";
-            return true;
-        }
-
         lastTapMethod = "فشل";
         return false;
-    }
-
-    /* ضغطتين إضافيتين (المجموع 3) كل 300 ملي ثانية، تتوقف إذا اختفى الزر */
-    private static final int US_BURST_EXTRA = 2;
-    private static final long US_BURST_GAP_MS = 300L;
-
-    private void burstTap(final AccessibilityNodeInfo node) {
-        final AccessibilityNodeInfo clickable = findClickableParent(node);
-        final AccessibilityNodeInfo target = clickable != null ? clickable : node;
-        final Rect r = new Rect();
-        node.getBoundsInScreen(r);
-
-        for (int i = 1; i <= US_BURST_EXTRA; i++) {
-            scanHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        if (!target.refresh()) {
-                            return;
-                        }
-                        if (clickable != null && clickable.performAction(
-                                AccessibilityNodeInfo.ACTION_CLICK)) {
-                            return;
-                        }
-                        tapAt(r.centerX(), r.centerY());
-                    } catch (Exception e) {
-                        Log.d(TAG, "burst خطأ: " + e.getMessage());
-                    }
-                }
-            }, US_BURST_GAP_MS * i);
-        }
-    }
-
-    private void burstTapAt(final int x, final int y) {
-        for (int i = 1; i <= US_BURST_EXTRA; i++) {
-            scanHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    tapAt(x, y);
-                }
-            }, US_BURST_GAP_MS * i);
-        }
     }
 
     private boolean tapAt(int x, int y) {
@@ -1127,17 +1200,12 @@ public class MyAccessibilityService extends AccessibilityService {
             path.moveTo(x, y);
 
             GestureDescription.StrokeDescription stroke =
-                    new GestureDescription.StrokeDescription(path, 0, 40);
+                    new GestureDescription.StrokeDescription(path, 0, 50);
 
             GestureDescription gesture = new GestureDescription.Builder()
                     .addStroke(stroke).build();
 
-            return dispatchGesture(gesture, new GestureResultCallback() {
-                @Override
-                public void onCancelled(GestureDescription g) {
-                    Log.d(TAG, "اللمسة انلغت");
-                }
-            }, null);
+            return dispatchGesture(gesture, null, null);
 
         } catch (Exception e) {
             Log.d(TAG, "tapAt فشل: " + e.getMessage());
