@@ -83,7 +83,13 @@ public class MyAccessibilityService extends AccessibilityService {
     private String lastHandledSignature = null;
     private long lastHandledAt = 0L;
 
-    private final Runnable scanRunnable = this::scanCurrentScreen;
+    /* فحص واحد معلّق فقط: الأحداث الكثيرة (أنيميشن/خريطة) ما تأجّل الفحص */
+    private boolean scanPending = false;
+
+    private final Runnable scanRunnable = () -> {
+        scanPending = false;
+        scanCurrentScreen();
+    };
 
     /* ===== قياس سرعة الضغط (مللي ثانية) ===== */
     private long lastEventUptime = 0L;   // وقت آخر حدث وصل
@@ -131,8 +137,11 @@ public class MyAccessibilityService extends AccessibilityService {
         long et = event.getEventTime();
         lastEventUptime = et > 0 ? et : SystemClock.uptimeMillis();
 
-        scanHandler.removeCallbacks(scanRunnable);
-        scanHandler.postDelayed(scanRunnable, SCAN_DELAY_MS);
+        if (scanPending) {
+            return;
+        }
+        scanPending = true;
+        scanHandler.post(scanRunnable);
     }
 
     /* كل النوافذ الظاهرة (التطبيق + الإشعارات العائمة) من الأعلى للأسفل */
@@ -261,6 +270,8 @@ public class MyAccessibilityService extends AccessibilityService {
     }
 
     /* ===== مسار القبول الأسرع (Uber العراق): يضغط قبل المرور على كامل الشجرة ===== */
+    private static final long FAST_DUP_MS = 6000L;
+
     private boolean hasAnyText(AccessibilityNodeInfo root, String t) {
         List<AccessibilityNodeInfo> n = root.findAccessibilityNodeInfosByText(t);
         return n != null && !n.isEmpty();
@@ -319,21 +330,23 @@ public class MyAccessibilityService extends AccessibilityService {
                 return false;
             }
 
-            /* أي شاشة غير بطاقة العراق العادية تروح للمسار الكامل */
-            if (hasAnyText(root, CONFIRM_TEXT) || hasAnyText(root, "مع دفع")) {
-                return false;
-            }
+            /* بطاقة أمريكا تروح للمسار الكامل */
             if (Prefs.isUsEnabled(this)) {
-                for (String t : US_ACCEPT_TEXTS) {
-                    if (hasAnyText(root, t)) {
-                        return false;
-                    }
+                if (hasAnyText(root, "تطابق") || hasAnyText(root, "اقبل")) {
+                    return false;
                 }
             }
 
             Double distance = findDistanceFast(root);
-            String address = findPickupAddress(root);
-            if (distance == null || address == null) {
+            if (distance == null) {
+                return false;
+            }
+
+            /* العنوان فقط إذا فلتر الأحياء شغّال أو الإحصائيات شغّالة */
+            boolean needAddr = Prefs.isNeighborhoodFilterEnabled(this)
+                    || Prefs.isStatsEnabled(this);
+            String address = needAddr ? findPickupAddress(root) : null;
+            if (Prefs.isNeighborhoodFilterEnabled(this) && address == null) {
                 return false;
             }
 
@@ -341,7 +354,8 @@ public class MyAccessibilityService extends AccessibilityService {
             boolean rangeOk = maxKm < 0
                     || (distance >= MIN_DISTANCE_KM && distance <= maxKm);
 
-            String matchedHood = NeighborhoodFilter.matchNeighborhood(address);
+            String matchedHood = address != null
+                    ? NeighborhoodFilter.matchNeighborhood(address) : null;
             boolean hoodOk = true;
             if (Prefs.isNeighborhoodFilterEnabled(this) && matchedHood != null) {
                 hoodOk = Prefs.getSelectedNeighborhoods(this).contains(matchedHood);
@@ -352,9 +366,9 @@ public class MyAccessibilityService extends AccessibilityService {
                 return false;
             }
 
-            String sig = "F|" + distance + "|" + address;
+            String sig = "F|" + distance + "|" + (address == null ? "" : address);
             if (sig.equals(lastHandledSignature)
-                    && now - lastHandledAt < DUP_WINDOW_MS) {
+                    && now - lastHandledAt < FAST_DUP_MS) {
                 return true;
             }
 
@@ -396,6 +410,11 @@ public class MyAccessibilityService extends AccessibilityService {
                     collectAllText(root, sb);
                     category = detectCategory(normalizeArabicText(sb.toString()));
                 } catch (Exception ignored) {
+                }
+                if (address == null) {
+                    address = findPickupAddress(root);
+                    matchedHood = address != null
+                            ? NeighborhoodFilter.matchNeighborhood(address) : null;
                 }
                 String hood = matchedHood != null
                         ? matchedHood : firstAddressPart(address);
@@ -718,6 +737,7 @@ public class MyAccessibilityService extends AccessibilityService {
         long left = SHOT_DELAY_MS - (now - shotWaitStart);
         if (left > 0) {
             scanHandler.removeCallbacks(scanRunnable);
+            scanPending = true;
             scanHandler.postDelayed(scanRunnable, left);
             return true;
         }
@@ -1580,12 +1600,14 @@ public class MyAccessibilityService extends AccessibilityService {
     @Override
     public void onInterrupt() {
         scanHandler.removeCallbacks(scanRunnable);
+        scanPending = false;
         Log.d(TAG, "تم مقاطعة الخدمة");
     }
 
     @Override
     public boolean onUnbind(android.content.Intent intent) {
         scanHandler.removeCallbacks(scanRunnable);
+        scanPending = false;
         return super.onUnbind(intent);
     }
 
