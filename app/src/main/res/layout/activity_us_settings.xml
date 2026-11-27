@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_screen"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layoutDirection="rtl"
+        android:padding="18dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="إعدادات Uber أمريكا"
+            android:textColor="@color/text_primary"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="مفصولة تمامًا عن إعدادات Uber العراق"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp" />
+
+        <!-- ===== التشغيل ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="5dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="66dp"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="5dp">
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_icon_teal"
+                    android:gravity="center"
+                    android:text="✓"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="11dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="تشغيل أتمتة Uber أمريكا"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvUsEnabledSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="شغّالة"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp" />
+                </LinearLayout>
+                <Switch
+                    android:id="@+id/swUsEnabled"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/accent_teal" />
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp"
+                android:text="المفتاح الرئيسي. إذا طفّيته ما تشتغل أي ميزة من ميزات Uber أمريكا."
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="5dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="66dp"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="5dp">
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_icon_teal"
+                    android:gravity="center"
+                    android:text="✓"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="11dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="قبول تلقائي (تطابق / اقبل)"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvUsAcceptSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="شغّال"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp" />
+                </LinearLayout>
+                <Switch
+                    android:id="@+id/swUsAccept"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/accent_teal" />
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp"
+                android:text="يضغط زر «تطابق» أو «اقبل» لحاله إذا الطلب ضمن المسافة ووقت الوصول اللي حددتهم."
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="5dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="66dp"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="5dp">
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_icon_purple"
+                    android:gravity="center"
+                    android:text="✕"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="11dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="تجاهل تلقائي (زر X)"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvUsRejectSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="شغّال"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp" />
+                </LinearLayout>
+                <Switch
+                    android:id="@+id/swUsReject"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/accent_teal" />
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp"
+                android:text="يضغط زر X لحاله إذا الطلب خارج المسافة أو الوقت. إذا طفّيته يترك الطلب على الشاشة."
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="5dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="66dp"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="5dp">
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_icon_blue"
+                    android:gravity="center"
+                    android:text="▥"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="11dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="تسجيل الإحصائيات"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvUsStatsSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="شغّال"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp" />
+                </LinearLayout>
+                <Switch
+                    android:id="@+id/swUsStats"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/accent_teal" />
+            </LinearLayout>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp"
+                android:text="يسجل كل طلب بإحصائية Uber أمريكا (المقبول والمتجاهل) مع مكان الزبون والوجهة والمسافة والوقت."
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- ===== المسافة ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="5dp">
+            <LinearLayout
+                android:id="@+id/usDistHeader"
+                android:layout_width="match_parent"
+                android:layout_height="66dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="5dp">
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_icon_purple"
+                    android:gravity="center"
+                    android:text="↔"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="11dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="أقصى مسافة للطلب"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvUsDistanceSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="حتى 3 كم"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp" />
+                </LinearLayout>
+                <TextView
+                    android:id="@+id/usDistArrow"
+                    android:layout_width="32dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="▾"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp"
+                android:text="أقصى مسافة بينك وبين الزبون. الطلب الأبعد منها يعتبر خارج المطلوب. «بدون حد» يعني ما تنفحص المسافة."
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+
+            <LinearLayout
+                android:id="@+id/usDistPanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/border_color" />
+                <RadioGroup
+                    android:id="@+id/rgUsDistance"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp">
+                    <RadioButton android:id="@+id/rbUs1km" android:layout_width="match_parent" android:layout_height="44dp" android:text="حتى 1 كم" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUs2km" android:layout_width="match_parent" android:layout_height="44dp" android:text="حتى 2 كم" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUs25km" android:layout_width="match_parent" android:layout_height="44dp" android:text="حتى 2.5 كم" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUs275km" android:layout_width="match_parent" android:layout_height="44dp" android:text="حتى 2.75 كم" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUs3km" android:layout_width="match_parent" android:layout_height="44dp" android:text="حتى 3 كم" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUsAny" android:layout_width="match_parent" android:layout_height="44dp" android:text="بدون حد للمسافة" android:textColor="@color/accent_teal" android:textSize="13sp" android:textStyle="bold" />
+                </RadioGroup>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ===== وقت الوصول ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="5dp">
+            <LinearLayout
+                android:id="@+id/usTimeHeader"
+                android:layout_width="match_parent"
+                android:layout_height="66dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="5dp">
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_icon_teal"
+                    android:gravity="center"
+                    android:text="⏱"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="11dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="أقصى وقت وصول للزبون"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/tvUsTimeSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="حتى 4 دقايق"
+                        android:textColor="@color/text_muted"
+                        android:textSize="10sp" />
+                </LinearLayout>
+                <TextView
+                    android:id="@+id/usTimeArrow"
+                    android:layout_width="32dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="▾"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp"
+                android:text="أقصى وقت وصول للزبون بالدقائق. الأطول منه يعتبر خارج المطلوب. «بلا تحديد» يعني ما ينفحص الوقت."
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+
+            <LinearLayout
+                android:id="@+id/usTimePanel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+                <View android:layout_width="match_parent" android:layout_height="1dp" android:background="@color/border_color" />
+                <RadioGroup
+                    android:id="@+id/rgUsMinutes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp">
+                    <RadioButton android:id="@+id/rbUsMin1" android:layout_width="match_parent" android:layout_height="44dp" android:text="1د" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUsMin2" android:layout_width="match_parent" android:layout_height="44dp" android:text="2د" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUsMin3" android:layout_width="match_parent" android:layout_height="44dp" android:text="3د" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUsMin4" android:layout_width="match_parent" android:layout_height="44dp" android:text="4د" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUsMin5" android:layout_width="match_parent" android:layout_height="44dp" android:text="5د" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUsMin6" android:layout_width="match_parent" android:layout_height="44dp" android:text="6د" android:textColor="@color/text_primary" android:textSize="13sp" />
+                    <RadioButton android:id="@+id/rbUsMinAny" android:layout_width="match_parent" android:layout_height="44dp" android:text="بلا تحديد" android:textColor="@color/accent_teal" android:textSize="13sp" android:textStyle="bold" />
+                </RadioGroup>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- ===== تشخيص ===== -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_card"
+            android:orientation="vertical"
+            android:padding="14dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="تشخيص آخر الطلبات"
+                android:textColor="@color/text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="يبيّن شنو قرا التطبيق من آخر طلبات أمريكا وشنو سوّى. إذا شي ما اشتغل صوّر هذا الجزء وأرسله."
+                android:textColor="@color/text_muted"
+                android:textSize="11sp" />
+            <TextView
+                android:id="@+id/tvUsDiag"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/text_secondary"
+                android:textIsSelectable="true"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnSaveUs"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_hero"
+            android:stateListAnimator="@null"
+            android:text="حفظ الإعدادات"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</ScrollView>

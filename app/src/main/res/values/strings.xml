@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">UI Automation Tool</string>
+    <string name="accessibility_service_description">
+        تستخدم هذه الخدمة للبحث التلقائي عن أزرار محددة (مثل "موافق" أو "OK")
+        والنقر عليها، ولا تعمل إلا عندما يقوم المستخدم بتفعيلها يدويًا عبر الزر العائم.
+    </string>
+</resources>

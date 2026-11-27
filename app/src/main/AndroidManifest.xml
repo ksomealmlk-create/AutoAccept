@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.uiautomation">
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="صكار الطلبات"
+        android:theme="@style/AppTheme">
+
+        <!-- شاشة القفل هي الآن نقطة الدخول الأولى للتطبيق -->
+        <activity
+            android:name=".LockActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".SettingsChooserActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".UsSettingsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".StatsChooserActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".StatsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".ShotsActivity"
+            android:exported="false" />
+
+        <!-- خدمة النافذة العائمة -->
+        <service
+            android:name=".FloatingService"
+            android:exported="false" />
+
+        <!-- خدمة إمكانية الوصول (Accessibility Service) -->
+        <service
+            android:name=".MyAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+    </application>
+</manifest>
